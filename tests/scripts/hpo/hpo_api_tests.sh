@@ -105,11 +105,16 @@ function form_hpo_api_url {
 			SERVER_IP="localhost"
 			URL="http://${SERVER_IP}"
 			;;
+		minikube)
+			SERVER_IP=$(minikube ip)
+			PORT=$(kubectl -n monitoring get svc hpo --no-headers -o=custom-columns=PORT:.spec.ports[*].nodePort)
+			URL="http://${SERVER_IP}"
+			;;
 	        *);;
         esac
 
 	# Add conditions later for other cluster types
-        if [[ ${cluster_type} == "native" || ${cluster_type} == "docker" ]]; then
+        if [[ ${cluster_type} == "native" || ${cluster_type} == "docker" || ${cluster_type} == "minikube" ]]; then
                 hpo_url="${URL}:${PORT}/${API}"
         fi
 }
@@ -799,9 +804,6 @@ function hpo_sanity_test() {
 	N_TRIALS=5
 	failed=0
 
-	# Form the url based on cluster type & API
-	form_hpo_api_url "experiment_trials"
-	echo "HPO URL = $hpo_url"  | tee -a ${LOG}
 
 	# Get the experiment id from the search space
 	exp_id=$(echo ${hpo_post_experiment_json["valid-experiment"]} | jq '.search_space.experiment_id')
@@ -819,7 +821,11 @@ function hpo_sanity_test() {
 		deploy_hpo ${cluster_type} ${HPO_CONTAINER_IMAGE} ${SERV_LOG}
 	fi
 
-	sleep 10
+	sleep 20
+
+	# Form the url based on cluster type & API
+	form_hpo_api_url "experiment_trials"
+	echo "HPO URL = $hpo_url"  | tee -a ${LOG}
 
 	expected_http_code="200"
 

@@ -90,6 +90,7 @@ function deploy_hpo() {
 		cmd="./deploy_hpo.sh -c ${cluster_type} > ${log} 2>&1 &"
 		echo "Command to deploy hpo - ${cmd}"
 		./deploy_hpo.sh -c ${cluster_type} > ${log} 2>&1 &
+		#./deploy_hpo.sh -c ${cluster_type} &
 	else 
 		cmd="./deploy_hpo.sh -c ${cluster_type} -o ${HPO_CONTAINER_IMAGE}"
 		echo "Command to deploy hpo - ${cmd}"
@@ -103,7 +104,7 @@ function deploy_hpo() {
 		exit -1
 	fi
 
-	sleep 2
+	sleep 10
 	if [ ${cluster_type} == "docker" ]; then
 		log=$3
 		docker logs hpo_docker_container > "${log}" 2>&1

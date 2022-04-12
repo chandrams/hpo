@@ -24,24 +24,40 @@ echo
 echo "Using version: ${HPO_VERSION}"
 HPO_CONTAINER_IMAGE=${HPO_REPO}:${HPO_VERSION}
 
+HPO_SA_MANIFEST="manifests/hpo-operator-sa.yaml"
+HPO_DEPLOY_MANIFEST_TEMPLATE="manifests/hpo-operator-deployment.yaml_template"
+HPO_DEPLOY_MANIFEST="manifests/hpo-operator-deployment.yaml"
+HPO_ROLE_MANIFEST="manifests/hpo-operator-role.yaml"
+HPO_RB_MANIFEST_TEMPLATE="manifests/hpo-operator-rolebinding.yaml_template"
+HPO_RB_MANIFEST="manifests/hpo-operator-rolebinding.yaml"
+HPO_SA_NAME="hpo-sa"
+HPO_CONFIGMAPS="manifests/configmaps"
+HPO_CONFIGS="manifests/hpo-configs"
+
 #default values
 setup=1
 cluster_type="native"
 CONTAINER_RUNTIME="docker"
+non_interactive=0
+hpo_ns=""
+# docker: loop timeout is turned off by default
+timeout=-1
 
 # source the helpers script
 . ${SCRIPTS_DIR}/cluster-helpers.sh
 
 function usage() {
 	echo
-	echo "Usage: $0 [-c [docker|minikube|native]] [-o hpo container image]"
+	echo "Usage: $0 [-a] [-c [docker|minikube|native]] [-o hpo container image] [-n namespace] [-d configmaps-dir ]"
 	echo "       -s = start(default), -t = terminate"
 	echo " -c: cluster type."
 	echo " -o: build with specific hpo container image name [Default - kruize/hpo:<version>]"
+	echo " -n: Namespace to which hpo is deployed [Default - monitoring namespace for cluster type minikube]"
+  echo " -d: Config maps directory [Default - manifests/configmaps]"
 	exit -1
 }
 
-# Check if the cluster_type is one of icp or openshift
+# Check the cluster_type
 function check_cluster_type() {
 	case "${cluster_type}" in
 	docker|minikube|native)
@@ -53,12 +69,18 @@ function check_cluster_type() {
 }
 
 # Iterate through the commandline options
-while getopts c:o:st gopts
+while getopts ac:o:n:st gopts
 do
 	case ${gopts} in
+	a)
+  		non_interactive=1
+  		;;
 	c)
 		cluster_type="${OPTARG}"
 		check_cluster_type
+		;;
+  n)
+		hpo_ns="${OPTARG}"
 		;;
 	o)
 		HPO_CONTAINER_IMAGE="${OPTARG}"
@@ -76,7 +98,7 @@ done
 
 resolve_container_runtime
 
-# Get Service Status 
+# Get Service Status
 SERVICE_STATUS_NATIVE=$(ps -u | grep service.py | grep -v grep)
 SERVICE_STATUS_DOCKER=$(${CONTAINER_RUNTIME} ps | grep hpo_docker_container)
 

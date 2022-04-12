@@ -69,14 +69,17 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 json_object = json.loads(str_object)
                 # TODO: validate structure of json_object for each operation
                 if json_object["operation"] == "EXP_TRIAL_GENERATE_NEW":
+                    print ("Calling generate new operation")
                     self.handle_generate_new_operation(json_object)
                 elif json_object["operation"] == "EXP_TRIAL_GENERATE_SUBSEQUENT":
                     self.handle_generate_subsequent_operation(json_object)
                 elif json_object["operation"] == "EXP_TRIAL_RESULT":
                     self.handle_result_operation(json_object)
                 else:
+                    print ("***** operation is invalid")
                     self._set_response(400, "-1")
             else:
+                print ("***** content type is not app/json")
                 self._set_response(400, "-1")
         else:
             self._set_response(403, "-1")
@@ -114,6 +117,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             trial_number = hpo_service.instance.get_trial_number(json_object["search_space"]["experiment_id"])
             self._set_response(200, str(trial_number))
         else:
+            print ("**** NEW operation, search space json does not contain experiment id or if json object is invalid")
             self._set_response(400, "-1")
 
     def handle_generate_subsequent_operation(self, json_object):
@@ -124,6 +128,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             trial_number = hpo_service.instance.get_trial_number(experiment_id)
             self._set_response(200, str(trial_number))
         else:
+            print ("**** SUBSEQUENT operation, json does not contain experiment id or if json object is invalid ", is_valid_json_object)
             self._set_response(400, "-1")
 
     def handle_result_operation(self, json_object):
@@ -134,6 +139,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                        json_object["result_value"])
             self._set_response(200, "0")
         else:
+            print ("**** RESULT operation, does not contain experiment id ")
             self._set_response(400, "-1")
 
 
